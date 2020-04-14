@@ -1,0 +1,21 @@
+システムコール
+
+`os.Create(file)`から`syscall`パッケージの`Open()`までさかのぼって確認
+
+システムコールを呼ばれる側（OS）も確認
+ write システムコール
+  https://github.com/torvalds/linux/blob/v4.13/fs/read_write.c#L557
+ sys_write()関数の取り出し
+  https://github.com/torvalds/linux/blob/v4.13/arch/x86/entry/common.c#L284
+
+システムコールのモニタリング
+ - Linux
+   strace
+ - FreeBSD
+   truss
+
+- Q5.1: システムコールの確認 (main.go)
+  go run main.go
+  go tool trace trace.out
+  ref:https://golang.org/pkg/runtime/trace/
+      https://golang.org/cmd/trace/
