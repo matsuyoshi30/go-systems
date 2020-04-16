@@ -1,0 +1,18 @@
+高速なUnixドメインソケット
+
+そもそもUnixドメインソケットとは
+＝プロセス間通信(IPC)という点で普通のソケットと同じだが、基本的に同じホストのプロセス間通信で用いられる(WebサーバとNGINXなどのリバースプロキシなど)
+  ファイルシステム上のパスを指定し特殊なファイルをインターフェースとして各プロセスが通信する
+
+- Unixドメインソケット版のHTTPサーバー (./unixdomainsocket)
+  サーバー側：net.Listen()のパスがソケットファイルになる
+  クライアント側：net.Dial()のパスがソケットファイルになる
+
+- データグラム型のUnixドメインソケット (./datagram)
+  UDP相当の使い方が出来る
+  サーバー側：net.ListenPacket()を使用し、プロトコルとしてはunixgramを設定する
+  クライアント側：net.Dial()で開くソケットは送信用でアドレスと結びついていないので、サーバーと同じようにnet.ListenPacket()を使って送受信する
+
+- UnixドメインソケットとTCPのベンチマーク (./benchmark)
+  ファイルI/OやTCPソケットは`syscall.Syscall`、Unixドメインソケットは`syscall.RawSyscall`
+  `go test -bench .`でベンチマーク実行
