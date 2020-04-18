@@ -1,0 +1,60 @@
+プロセスの役割とGo言語による操作
+
+- プロセスに含まれているもの
+  - プロセスID
+  - プロセスグループID、セッションブループID
+  - ユーザーID、グループID
+  - 実効ユーザーID、実効グループID
+    capability
+    https://www.ipa.go.jp/security/fy23/reports/tech1-tg/b_01.html
+  - カレントフォルダ
+  - ファイルディスクリプタ
+
+- プロセスの入出力
+  プロセスの入力＝コマンドライン引数、環境変数
+  プロセスの出力＝終了コード
+
+- プロセスの名前や資源情報の取得
+  psコマンド
+  Linuxは/proc以下に情報があり、`cat /proc/<process id>/cmdline`でみることが出来る
+  macOSはpsコマンドがsysctlシステムコールを使っているが、OSごとの互換性はない
+  WindowsはGetModuleBaseName()というAPIを使う
+  Goからはgopsutilというライブラリがマルチプラットフォームで便利！
+
+- OSから見たプロセス
+  = CPU時間を消費してあらかじめ用意してあったプログラムに従って動く「タスク」
+  ->OSの仕事はたくさんあるプロセスに効率よく仕事をさせること
+
+- exec.Cmd()によるプロセスの起動
+  Goから他のプロセスを扱うときは、
+  - os.Process: 低レベルな構造体
+  - os/execのexec.Cmd: ちょっと高機能な構造体
+    exec.Cmdの実効を開始する前に以下のメソッドを使うことで、子プロセスとリアルタイムに通信できるパイプが取得される
+    - StdinPipe()
+    - StdoutPipe()
+    - StderrPipe()
+    処理に時間がかかるコマンド実行時の途中経過を把握するのに使う (`go build -o count count.go`して実行)
+    標準出力と標準エラー出力を同時にダンプするときは、sync.Mutexなどつかって同時に書き込まないようにしたほうがいい
+
+- os.Processによるプロセスの起動・操作
+  指定したコマンドを実行したり、既に起動中のプロセスIDを指定して作成したり出来る
+  - os.StartProcess(コマンド, 引数, オプション)
+    実行ファイルをしてする場合は環境変数を見て探したりしないので、絶対パスや相対パスで直接指定が必要
+  - os.FindProcess(プロセスID)
+
+- プロセスに関する便利なGoのライブラリ
+  github.com/cheggaaa/pb
+  github.com/mattn/go-colorable
+  github.com/mattn/go-isatty
+    エスケープシーケンスを出力するときに、標準出力が接続されている先が擬似端末かどうかを判定する用
+
+- 外部プロセスに対して自分が擬似端末だと詐称する (`go build -o check check.go`して実行)
+  Cmd.StdinPipe()使うと子プロセスにおけるisatty()で「端末でない」と判定されてしまう
+  「複数の子プロセスを並行して実行し、その間に子プロセスの出力をバッファにためておいて、終了したらまとめて出力するけど色情報は残したい」みたいなケースでは、自分が擬似端末だと詐称する方法がある
+  POSIX: github.com/kr/pty
+  Windows: github.com/iamacarpet/go-winpty
+
+- 他、プロセスについて
+  - fork()/exec()
+    fork()は現在のプロセスを2つに分身させる（戻り地が子プロセスのIDか0かで親子を判定）
+    execve()で新しいプログラムを読み込んで、親プロセスが用意した環境変数とコマンドライン引数を渡して実行
